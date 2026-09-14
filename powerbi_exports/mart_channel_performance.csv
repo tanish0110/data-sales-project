@@ -1,0 +1,9 @@
+git config --global user.email "you@example.com"channel,total_orders,total_revenue,avg_order_value,revenue_share
+Organic,242,153155.0,632.87,0.2557
+Instagram ads,193,108168.0,560.46,0.1806
+Google ads,151,88590.0,586.69,0.1479
+Referral,116,72817.0,627.73,0.1216
+Facebook ads,114,72726.0,637.95,0.1214
+Push Notification,81,42456.0,524.15,0.0709
+In-App Banner,58,36975.0,637.5,0.0617
+Influencer,45,24016.0,533.69,0.0401

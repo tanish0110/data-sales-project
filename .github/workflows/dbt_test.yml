@@ -1,0 +1,51 @@
+name: dbt tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion (Excel -> DuckDB raw tables)
+        run: python ingest.py
+
+      - name: Create dbt profile
+        run: |
+          mkdir -p ~/.dbt
+          cat <<EOF > ~/.dbt/profiles.yml
+          sales_pipeline:
+            target: dev
+            outputs:
+              dev:
+                type: duckdb
+                path: ../sales_pipeline.duckdb
+                threads: 4
+          EOF
+
+      - name: dbt debug (verify connection)
+        working-directory: sales_pipeline
+        run: dbt debug
+
+      - name: dbt run (build staging + marts)
+        working-directory: sales_pipeline
+        run: dbt run
+
+      - name: dbt test (data quality checks)
+        working-directory: sales_pipeline
+        run: dbt test

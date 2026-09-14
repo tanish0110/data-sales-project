@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: raw_transactions
+      - name: raw_weekly_summary
+
+models:
+  - name: stg_transactions
+    description: "Cleaned, one row per order. Sourced from raw.raw_transactions."
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_weekly_summary
+    description: "Cleaned weekly business KPIs as reported by the company. Sourced from raw.raw_weekly_summary."
+    columns:
+      - name: week_start_date
+        tests:
+          - unique
+          - not_null
