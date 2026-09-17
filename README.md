@@ -60,9 +60,32 @@ Excel source data
 ├── dbt_test.yml                           # GitHub Actions CI pipeline
 ├── README.md                              # Project documentation
 ├── CHANGELOG.md                           # Project notes and change history
+├── docs/
+│   └── project_notes.md                   # Team notes and future enhancements
 ├── .gitignore                             # Local environment exclusions
+├── .gitattributes                         # Git attribute rules for text/binary files
 └── .github/                               # Optional GitHub configuration
 ```
+
+---
+
+## Project Notes
+
+This project is designed to be easy to run locally and easy to inspect in GitHub. It is intentionally lightweight and uses a simple warehouse-first architecture so the flow from raw data to reporting is easy to follow.
+
+For a short summary of current project notes and possible future improvements, see [docs/project_notes.md](docs/project_notes.md).
+
+---
+
+## Validation Checklist
+
+Before sharing or running final analysis, confirm the following:
+
+- The Excel source file exists in the `data/` folder.
+- `python ingest.py` completes successfully.
+- `dbt debug` connects to the local DuckDB database.
+- `dbt run` builds the staging and mart models without errors.
+- `python export_marts.py` creates the CSV exports in [powerbi_exports](powerbi_exports).
 
 ---
 

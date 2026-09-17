@@ -1,0 +1,9 @@
+* text=auto
+*.py text
+*.sql text
+*.md text
+*.yml text
+*.yaml text
+*.csv text
+*.duckdb binary
+*.xlsx binary
