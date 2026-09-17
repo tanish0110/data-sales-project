@@ -1,35 +1,33 @@
 # Data Sales Project
 
-This project builds a small end-to-end sales analytics pipeline using Python, DuckDB, and dbt. It ingests sales data from an Excel workbook, loads it into a local DuckDB warehouse, transforms the data in dbt, and exports curated mart tables for reporting in Power BI.
+This project builds a simple end-to-end sales analytics pipeline using Python, DuckDB, and dbt. It ingests sales data from an Excel workbook, loads the raw tables into a local DuckDB database, transforms the data in dbt, and exports reporting-ready tables for Power BI.
 
-## Project Goal
+## Overview
 
-The main purpose is to turn raw sales data into clean, analysis-ready tables that can answer questions like:
+The goal of this project is to turn raw sales data into clean, trusted output that supports business questions such as:
 
-- Which sales channel performs best?
-- How do actual weekly transaction totals compare with reported weekly summary numbers?
-- How does revenue trend against marketing spend and conversion rate?
+- Which sales channel generates the most revenue?
+- Are weekly transaction totals consistent with the company-reported summary?
+- How do revenue, marketing spend, and conversion trends behave over time?
 
 ---
 
-## Pipeline Overview
+## Pipeline Flow
 
-The flow is:
+1. The source Excel file is placed in the `data/` folder.
+2. `ingest.py` reads the workbook and loads the raw data into DuckDB.
+3. dbt models transform the raw data into cleaned staging tables.
+4. dbt marts create business-ready analytics tables.
+5. `export_marts.py` exports the final tables as CSV files for Power BI.
 
-1. Raw Excel file is read from the data folder.
-2. Python ingestion script loads the data into DuckDB as raw tables.
-3. dbt models clean and structure the data in staging tables.
-4. dbt marts calculate business views for reporting.
-5. CSV files are exported for Power BI consumption.
-
-### Data flow
-
-raw data in Excel
+```text
+Excel source data
     -> ingest.py
     -> sales_pipeline.duckdb
     -> dbt staging models
-    -> dbt mart models
+    -> dbt marts
     -> powerbi_exports/*.csv
+```
 
 ---
 
@@ -38,7 +36,7 @@ raw data in Excel
 ```text
 .
 ├── data/
-│   └── Sales_Data.xlsx                 # Source sales Excel file
+│   └── Sales_Data.xlsx                    # Source Excel workbook
 ├── sales_pipeline/
 │   ├── models/
 │   │   ├── staging/
@@ -50,83 +48,82 @@ raw data in Excel
 │   │       └── mart_weekly_trend.sql
 │   ├── dbt_project.yml
 │   ├── README.md
-│   └── target/                         # dbt compiled output
-├── ingest.py                           # Load raw Excel sheets into DuckDB
-├── export_marts.py                     # Export mart tables as CSV files
-├── requirements.txt                    # Python dependencies
-├── sales_pipeline.duckdb               # Local database used by the pipeline
+│   └── target/
+├── ingest.py                              # Raw ingestion into DuckDB
+├── export_marts.py                        # Export marts to CSV
+├── requirements.txt                       # Python dependencies
+├── sales_pipeline.duckdb                  # Local warehouse database
 ├── powerbi_exports/
 │   ├── mart_channel_performance.csv
 │   ├── mart_weekly_reconciliation.csv
 │   └── mart_weekly_trend.csv
-├── dbt_test.yml                        # GitHub Actions workflow for CI checks
-└── README.md                           # This file
+├── dbt_test.yml                           # GitHub Actions CI pipeline
+├── README.md                              # Project documentation
+├── CHANGELOG.md                           # Project notes and change history
+├── .gitignore                             # Local environment exclusions
+└── .github/                               # Optional GitHub configuration
 ```
 
 ---
 
 ## Main Components
 
-### 1) Ingestion layer
+### 1. Ingestion Layer
 
-The script [ingest.py](ingest.py) reads the Excel workbook and creates raw tables in DuckDB.
+The script [ingest.py](ingest.py) reads the source workbook and creates raw tables in DuckDB.
 
-It loads two main sheets:
+It loads the following source sheets:
 
-- Transaction Data
-- Weekly Summary (Layer 2)
+- `Transaction Data`
+- `Weekly Summary (Layer 2)`
 
-The raw tables are created under the DuckDB schema named raw:
+The raw layer stores data in the `raw` schema:
 
-- raw.raw_transactions
-- raw.raw_weekly_summary
+- `raw.raw_transactions`
+- `raw.raw_weekly_summary`
 
-This layer keeps the original source data as-is, only standardizing column names and adding a few derived fields for downstream use.
+This layer preserves the original source records and standardizes the structure for downstream processing.
 
-### 2) dbt transformation layer
+### 2. dbt Transformation Layer
 
-The project in [sales_pipeline](sales_pipeline) contains dbt models that transform the raw tables into clean staging and mart tables.
+The dbt project in [sales_pipeline](sales_pipeline) cleans and models the raw tables.
 
 #### Staging models
 
 - [sales_pipeline/models/staging/stg_transactions.sql](sales_pipeline/models/staging/stg_transactions.sql)
-  - Cleans transaction-level sales data.
-  - Keeps one row per order.
-  - Creates a week_start_date field for joins.
+  - Cleans transaction data
+  - Keeps one row per order
+  - Creates `week_start_date` for easier weekly analysis
 
 - [sales_pipeline/models/staging/stg_weekly_summary.sql](sales_pipeline/models/staging/stg_weekly_summary.sql)
-  - Cleans weekly summary metrics.
-  - Extracts week numbers and prepares marketing and conversion metrics.
+  - Cleans weekly metrics
+  - Extracts week numbers for comparison with transaction data
 
 #### Mart models
 
 - [sales_pipeline/models/marts/mart_channel_performance.sql](sales_pipeline/models/marts/mart_channel_performance.sql)
-  - Shows sales metrics by channel.
-  - Includes revenue, average order value, and revenue share.
+  - Measures channel performance by revenue and order count
 
 - [sales_pipeline/models/marts/mart_weekly_reconciliation.sql](sales_pipeline/models/marts/mart_weekly_reconciliation.sql)
-  - Compares calculated weekly totals with reported weekly numbers.
-  - Adds a reconciliation status: MATCH or MISMATCH.
+  - Compares calculated totals with reported summary totals
+  - Adds a `MATCH` or `MISMATCH` status for data validation
 
 - [sales_pipeline/models/marts/mart_weekly_trend.sql](sales_pipeline/models/marts/mart_weekly_trend.sql)
-  - Combines transaction revenue with weekly marketing and conversion data.
-  - Useful for trend and performance analysis.
+  - Connects revenue trends with marketing spend and conversion metrics
 
-### 3) Export layer
+### 3. Export Layer
 
-The script [export_marts.py](export_marts.py) exports the mart tables from DuckDB into CSV files inside [powerbi_exports](powerbi_exports).
-
-These CSVs can be directly imported into Power BI.
+The script [export_marts.py](export_marts.py) exports the dbt mart tables as CSV files into [powerbi_exports](powerbi_exports). These files are ready for import into Power BI.
 
 ---
 
-## Setup Instructions
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.10+
-- Access to the Excel file in the data folder
-- A local environment such as venv or conda
+- A local virtual environment (recommended)
+- The source Excel file available in `data/Sales_Data.xlsx`
 
 ### 1. Create and activate a virtual environment
 
@@ -143,20 +140,7 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 3. Prepare the source file
-
-Place the sales workbook in:
-
-```text
-data/Sales_Data.xlsx
-```
-
-Make sure the workbook contains the expected sheets:
-
-- Transaction Data
-- Weekly Summary (Layer 2)
-
-### 4. Run the ingestion step
+### 3. Run ingestion
 
 ```powershell
 python ingest.py
@@ -168,68 +152,27 @@ This creates the DuckDB database at:
 sales_pipeline.duckdb
 ```
 
----
-
-## Run the dbt Project
-
-From the project root:
+### 4. Run dbt
 
 ```powershell
 cd sales_pipeline
-```
-
-Then run:
-
-```powershell
 dbt debug
 dbt run
 dbt test
 ```
 
-These commands validate the connection, build the staging and mart models, and run data quality tests.
-
----
-
-## Export for Power BI
-
-After dbt has built the mart tables, run:
+### 5. Export marts for Power BI
 
 ```powershell
+cd ..
 python export_marts.py
 ```
 
-This generates CSV files in [powerbi_exports](powerbi_exports) for import into Power BI.
-
-The exported marts are:
-
-- mart_channel_performance.csv
-- mart_weekly_reconciliation.csv
-- mart_weekly_trend.csv
+The generated CSV files appear in [powerbi_exports](powerbi_exports).
 
 ---
 
-## Output Tables
-
-The final business-facing outputs are:
-
-- main.mart_channel_performance
-- main.mart_weekly_reconciliation
-- main.mart_weekly_trend
-
-These are the tables designed for analysis and dashboarding.
-
----
-
-## Notes
-
-- The raw layer keeps original source data and only normalizes columns.
-- The staging layer is intentionally lightweight and keeps transformations simple.
-- The reconciliation mart checks if calculated weekly values match the reported summary.
-- The export script writes the final marts to CSV so they are easy to load into Power BI.
-
----
-
-## Typical Workflow
+## Recommended Workflow
 
 ```powershell
 python ingest.py
@@ -241,4 +184,59 @@ cd ..
 python export_marts.py
 ```
 
-This is the standard sequence for loading and transforming the sales dataset.
+This is the standard flow for building and exporting the project outputs.
+
+---
+
+## Troubleshooting
+
+### `ERROR: data/Sales_Data.xlsx not found`
+
+Make sure the source workbook is present in the `data/` folder and named exactly:
+
+```text
+data/Sales_Data.xlsx
+```
+
+### `dbt debug` fails to connect
+
+Check that:
+
+- the DuckDB database exists
+- you are running the command from the correct folder
+- the dbt profile is configured for the project
+
+### Power BI import issues
+
+Verify that the CSV files were exported successfully into [powerbi_exports](powerbi_exports) and that the files are not empty.
+
+### Local environment clutter
+
+Use the project `.gitignore` to avoid committing virtual environments and temporary Python files.
+
+---
+
+## Output Tables
+
+The final reporting tables are:
+
+- `main.mart_channel_performance`
+- `main.mart_weekly_reconciliation`
+- `main.mart_weekly_trend`
+
+These are the values used for analysis and dashboard reporting.
+
+---
+
+## Notes
+
+- The raw layer keeps the original dataset and normalizes only the structure.
+- The staging layer is intentionally lightweight and focused on cleaning.
+- The reconciliation mart checks whether calculated values match the reported summary.
+- The export script writes the final marts to CSV so they can be used directly in Power BI.
+
+---
+
+## Changelog
+
+For recent project updates and notes, see [CHANGELOG.md](CHANGELOG.md).
